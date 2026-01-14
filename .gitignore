@@ -29,3 +29,6 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# MCP Registry tokens
+.mcpregistry_*
