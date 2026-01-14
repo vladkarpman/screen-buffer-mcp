@@ -2,6 +2,8 @@
 
 MCP server for fast Android device interaction with scrcpy acceleration.
 
+<!-- mcp-name: io.github.vladkarpman/device-manager-mcp -->
+
 ## Features
 
 - **Fast operations** via scrcpy (~50ms latency)

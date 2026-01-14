@@ -1,0 +1,28 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.vladkarpman/device-manager-mcp",
+  "description": "MCP server for fast Android device interaction with scrcpy acceleration (~50ms latency).",
+  "repository": {
+    "url": "https://github.com/vladkarpman/device-manager-mcp",
+    "source": "github"
+  },
+  "version": "1.0.2",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "device-manager-mcp",
+      "version": "1.0.2",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "environmentVariables": [
+    {
+      "name": "DEVICE_MANAGER_LOG_LEVEL",
+      "description": "Set logging level (DEBUG, INFO, WARNING, ERROR)",
+      "isRequired": false,
+      "isSecret": false
+    }
+  ]
+}
