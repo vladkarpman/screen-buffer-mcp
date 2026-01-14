@@ -1,7 +1,15 @@
 """Device Manager MCP Server - Fast device interaction with scrcpy acceleration."""
 
-__version__ = "1.0.3"
+import asyncio
 
-from .server import main
+__version__ = "1.0.4"
+
+from .server import main as _async_main
+
+
+def main():
+    """Entry point for the MCP server."""
+    asyncio.run(_async_main())
+
 
 __all__ = ["main", "__version__"]
