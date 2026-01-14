@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "device-manager-mcp"
-version = "1.0.1"
+version = "1.0.2"
 description = "MCP server for fast Android device interaction with scrcpy acceleration"
 readme = "README.md"
 license = "MIT"
@@ -32,7 +32,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    "mcp>=1.0.0",
+    "mcp>=1.25.0",
     "pillow>=10.0.0",
     "numpy>=1.24.0",
     "mysc>=3.0.0",
