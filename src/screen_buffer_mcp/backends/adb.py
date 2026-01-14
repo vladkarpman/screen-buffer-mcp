@@ -15,7 +15,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger("device-manager-mcp.adb")
+logger = logging.getLogger("screen-buffer-mcp.adb")
 
 
 class AdbBackend:

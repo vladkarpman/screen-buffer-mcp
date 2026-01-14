@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Entry point for device-manager-mcp server."""
+"""Entry point for screen-buffer-mcp server."""
 
 import asyncio
 import sys

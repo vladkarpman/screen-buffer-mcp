@@ -1,8 +1,8 @@
-"""Device Manager MCP Server - Fast device interaction with scrcpy acceleration."""
+"""Screen Buffer MCP Server - Fast screenshots and frame buffer via scrcpy."""
 
 import asyncio
 
-__version__ = "1.0.7"
+__version__ = "1.0.0"
 
 from .server import main as _async_main
 
