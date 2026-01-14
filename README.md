@@ -9,21 +9,12 @@ MCP server for fast Android device interaction with scrcpy acceleration.
 - **Screenshots, taps, swipes, typing** - all device interactions
 - **Works with Claude Code** and any MCP-compatible client
 
-## Installation
+## Requirements
 
-```bash
-pip install device-manager-mcp
-
-# For scrcpy acceleration (recommended):
-pip install device-manager-mcp[scrcpy]
-```
-
-### Prerequisites
-
-- Python 3.11+
+- macOS 12+, Python 3.11+, adb, scrcpy 3.x
 - Android device connected via USB
-- `adb` installed and in PATH
-- For scrcpy acceleration: `scrcpy` 3.x installed
+
+See [docs/requirements.md](docs/requirements.md) for detailed setup instructions.
 
 ## Usage with Claude Code
 
@@ -33,8 +24,8 @@ Add to your `.mcp.json`:
 {
   "mcpServers": {
     "device-manager": {
-      "command": "python",
-      "args": ["-m", "device_manager_mcp"]
+      "command": "uvx",
+      "args": ["device-manager-mcp"]
     }
   }
 }
@@ -43,7 +34,7 @@ Add to your `.mcp.json`:
 Or add globally:
 
 ```bash
-claude mcp add device-manager -s user -- python -m device_manager_mcp
+claude mcp add device-manager -s user -- uvx device-manager-mcp
 ```
 
 ## Available Tools
@@ -105,14 +96,9 @@ device_tap(x=100, y=200, device="RFCW318P7NV")
 ## Development
 
 ```bash
-# Clone repository
 git clone https://github.com/vladkarpman/device-manager-mcp
 cd device-manager-mcp
-
-# Install with dev dependencies
-pip install -e ".[dev,scrcpy]"
-
-# Run tests
+pip install -e ".[dev]"
 pytest
 ```
 

@@ -9,8 +9,8 @@ MCP server for fast Android device interaction. Provides ~50ms latency via scrcp
 ## Commands
 
 ```bash
-# Install for development (with scrcpy support)
-pip install -e ".[dev,scrcpy]"
+# Install for development
+pip install -e ".[dev]"
 
 # Run tests
 pytest
