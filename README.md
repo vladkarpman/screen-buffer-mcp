@@ -1,22 +1,24 @@
-# device-manager-mcp
+# screen-buffer-mcp
 
-MCP server for fast Android device interaction with scrcpy acceleration.
+MCP server for fast Android screenshots via scrcpy frame buffer (~50ms latency).
 
-<!-- mcp-name: io.github.vladkarpman/device-manager-mcp -->
+<!-- mcp-name: io.github.vladkarpman/screen-buffer-mcp -->
 
 ## Features
 
-- **Fast operations** via scrcpy (~50ms latency)
-- **Automatic fallback** to adb (~500ms) when scrcpy unavailable
-- **Screenshots, taps, swipes, typing** - all device interactions
+- **Fast screenshots** via scrcpy frame buffer (~50ms vs ~500ms with adb)
+- **10-frame circular buffer** for instant access to recent frames
+- **Historical frame access** via `device_get_frame` for debugging/recording
+- **Automatic fallback** to adb when scrcpy unavailable
 - **Works with Claude Code** and any MCP-compatible client
 
 ## Requirements
 
-- macOS 12+, Python 3.11+, adb, scrcpy 3.x
+- macOS 12+ or Linux
+- Python 3.11+
+- adb (Android Debug Bridge)
+- scrcpy 3.x installed
 - Android device connected via USB
-
-See [docs/requirements.md](docs/requirements.md) for detailed setup instructions.
 
 ## Usage with Claude Code
 
@@ -25,9 +27,9 @@ Add to your `.mcp.json`:
 ```json
 {
   "mcpServers": {
-    "device-manager": {
+    "screen-buffer": {
       "command": "uvx",
-      "args": ["device-manager-mcp"]
+      "args": ["screen-buffer-mcp"]
     }
   }
 }
@@ -36,70 +38,84 @@ Add to your `.mcp.json`:
 Or add globally:
 
 ```bash
-claude mcp add device-manager -s user -- uvx device-manager-mcp
+claude mcp add screen-buffer -s user -- uvx screen-buffer-mcp
 ```
 
 ## Available Tools
 
 | Tool | Description | Latency |
 |------|-------------|---------|
-| `device_screenshot` | Capture screen as PNG | ~40ms (scrcpy) / ~500ms (adb) |
-| `device_tap` | Tap at coordinates | ~50ms (scrcpy) / ~200ms (adb) |
-| `device_swipe` | Swipe gesture | ~300ms |
-| `device_type` | Type text | ~100ms |
-| `device_press_key` | Press BACK, HOME, ENTER, etc. | ~50ms |
+| `device_screenshot` | Capture latest frame from buffer | ~50ms (scrcpy) / ~500ms (adb) |
+| `device_get_frame` | Get historical frame at offset | ~10ms |
 | `device_list` | List connected devices | ~100ms |
 | `device_screen_size` | Get screen dimensions | ~10ms |
 | `device_backend_status` | Check active backend | instant |
 
 ## How It Works
 
-The server automatically selects the best backend:
+The server maintains a 10-frame circular buffer from the scrcpy video stream:
 
-1. **scrcpy backend** (if available): Uses MYScrcpy library to communicate directly with scrcpy server on device. Provides ~50ms latency for screenshots and input.
+1. **scrcpy backend** (preferred): Connects to scrcpy server on device in video-only mode. Continuously captures frames at ~60fps into a circular buffer. Screenshots return the latest buffered frame instantly.
 
-2. **adb backend** (fallback): Uses standard `adb` commands. Works everywhere but slower (~500ms for screenshots).
+2. **adb backend** (fallback): Uses `adb exec-out screencap -p` for screenshots. Works everywhere but slower (~500ms per screenshot).
 
-## Example
+## Frame Buffer
+
+The frame buffer stores the last 10 frames (~160ms at 60fps), enabling:
+
+- **Instant screenshots**: Latest frame always ready, no capture delay
+- **Historical access**: Get frames from before an action for debugging
+- **Recording support**: Extract frames at specific offsets
 
 ```python
-# Claude Code will automatically use these tools:
-
-# Take a screenshot
+# Get latest screenshot
 device_screenshot()
 
-# Tap at coordinates
-device_tap(x=540, y=1200)
-
-# Swipe down
-device_swipe(start_x=540, start_y=800, end_x=540, end_y=1600)
-
-# Type text
-device_type(text="Hello World")
-
-# Press back button
-device_press_key(key="BACK")
+# Get frame from 100ms ago (offset 6 at 60fps)
+device_get_frame(offset=6)
 ```
 
 ## Configuration
 
 ### Environment Variables
 
-- `DEVICE_MANAGER_LOG_LEVEL`: Set logging level (DEBUG, INFO, WARNING, ERROR)
+- `SCREEN_BUFFER_LOG_LEVEL`: Set logging level (DEBUG, INFO, WARNING, ERROR)
 
 ### Multiple Devices
 
 Specify device ID for multi-device setups:
 
 ```python
-device_tap(x=100, y=200, device="RFCW318P7NV")
+device_screenshot(device="RFCW318P7NV")
 ```
+
+## Use with mobile-mcp
+
+For full device control (taps, swipes, typing), combine with [mobile-mcp](https://github.com/anthropics/mobile-mcp):
+
+```json
+{
+  "mcpServers": {
+    "screen-buffer": {
+      "command": "uvx",
+      "args": ["screen-buffer-mcp"]
+    },
+    "mobile-mcp": {
+      "command": "npx",
+      "args": ["-y", "@mobilenext/mobile-mcp@latest"]
+    }
+  }
+}
+```
+
+- **screen-buffer-mcp**: Fast screenshots (~50ms)
+- **mobile-mcp**: Device input (tap, swipe, type)
 
 ## Development
 
 ```bash
-git clone https://github.com/vladkarpman/device-manager-mcp
-cd device-manager-mcp
+git clone https://github.com/vladkarpman/screen-buffer-mcp
+cd screen-buffer-mcp
 pip install -e ".[dev]"
 pytest
 ```
