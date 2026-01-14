@@ -25,7 +25,7 @@ jobs:
           VERSION="${{ steps.version.outputs.VERSION }}"
 
           PYPROJECT_VERSION=$(grep -m1 '^version = ' pyproject.toml | cut -d'"' -f2)
-          INIT_VERSION=$(grep '__version__' src/device_manager_mcp/__init__.py | cut -d'"' -f2)
+          INIT_VERSION=$(grep '^__version__' src/device_manager_mcp/__init__.py | cut -d'"' -f2)
           SERVER_VERSION=$(grep -m1 '"version"' server.json | cut -d'"' -f4)
 
           echo "Tag version: $VERSION"
