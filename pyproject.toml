@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "device-manager-mcp"
+version = "1.0.0"
+description = "MCP server for fast Android device interaction with scrcpy acceleration"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Vladislav Karpman", email = "vladislavkarpman@gmail.com" }
+]
+keywords = [
+    "mcp",
+    "android",
+    "scrcpy",
+    "device",
+    "automation",
+    "testing",
+    "claude"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "mcp>=1.0.0",
+    "pillow>=10.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+scrcpy = [
+    "mysc>=3.0.0",
+    "adbutils>=2.0.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/vladkarpman/device-manager-mcp"
+Repository = "https://github.com/vladkarpman/device-manager-mcp"
+Issues = "https://github.com/vladkarpman/device-manager-mcp/issues"
+
+[project.scripts]
+device-manager-mcp = "device_manager_mcp:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/device_manager_mcp"]
