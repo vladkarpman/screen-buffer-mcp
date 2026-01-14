@@ -1,17 +1,17 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
-  "name": "io.github.vladkarpman/device-manager-mcp",
-  "description": "MCP server for fast Android device interaction with scrcpy acceleration (~50ms latency).",
+  "name": "io.github.vladkarpman/screen-buffer-mcp",
+  "description": "MCP server for fast Android screenshots via scrcpy frame buffer (~50ms latency).",
   "repository": {
-    "url": "https://github.com/vladkarpman/device-manager-mcp",
+    "url": "https://github.com/vladkarpman/screen-buffer-mcp",
     "source": "github"
   },
-  "version": "1.0.7",
+  "version": "1.0.0",
   "packages": [
     {
       "registryType": "pypi",
-      "identifier": "device-manager-mcp",
-      "version": "1.0.7",
+      "identifier": "screen-buffer-mcp",
+      "version": "1.0.0",
       "transport": {
         "type": "stdio"
       }
@@ -19,7 +19,7 @@
   ],
   "environmentVariables": [
     {
-      "name": "DEVICE_MANAGER_LOG_LEVEL",
+      "name": "SCREEN_BUFFER_LOG_LEVEL",
       "description": "Set logging level (DEBUG, INFO, WARNING, ERROR)",
       "isRequired": false,
       "isSecret": false
