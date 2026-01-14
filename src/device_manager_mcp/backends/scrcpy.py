@@ -99,8 +99,8 @@ class ScrcpyBackend:
 
             def _connect():
                 self._session = Session(
-                    device.serial,
-                    video_args=VideoArgs(max_fps=60),
+                    device,  # Pass AdbDevice object, not string
+                    video_args=VideoArgs(fps=60),
                     control_args=ControlArgs()
                 )
                 # Wait for connection
