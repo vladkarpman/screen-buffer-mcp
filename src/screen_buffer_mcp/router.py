@@ -57,6 +57,7 @@ class DeviceRouter:
             "scrcpy_available": self._scrcpy_available,
             "scrcpy_connected": self._scrcpy.is_connected if self._scrcpy else False,
             "frame_buffer": self._scrcpy.get_buffer_info() if self._scrcpy and self._scrcpy.is_connected else None,
+            "recording": self._scrcpy.get_recording_status() if self._scrcpy else {"is_recording": False},
             "primary_backend": "scrcpy" if self._scrcpy_available else "adb"
         }
 
@@ -105,3 +106,58 @@ class DeviceRouter:
                 logger.warning(f"scrcpy get_screen_size failed, falling back to adb: {e}")
 
         return await self.adb.get_screen_size(device)
+
+    # --- Recording methods (scrcpy only) ---
+
+    async def start_recording(self, output_path: str) -> dict[str, Any]:
+        """Start recording screen to file. Requires scrcpy.
+
+        Args:
+            output_path: Path to output video file (.mp4)
+
+        Returns:
+            Dict with success status and any error message
+        """
+        if not await self._check_scrcpy_available():
+            return {
+                "success": False,
+                "error": "Recording requires scrcpy - not available",
+            }
+
+        success = await self.scrcpy.start_recording(output_path)
+        if success:
+            return {
+                "success": True,
+                "output_path": output_path,
+                "message": "Recording started",
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Failed to start recording",
+            }
+
+    async def stop_recording(self) -> dict[str, Any]:
+        """Stop recording and return info about the recorded file.
+
+        Returns:
+            Dict with recording info: output_path, duration_seconds, success
+        """
+        if not self._scrcpy or not self._scrcpy.is_recording:
+            return {
+                "success": False,
+                "error": "No recording in progress",
+            }
+
+        return await self.scrcpy.stop_recording()
+
+    def get_recording_status(self) -> dict[str, Any]:
+        """Get current recording status.
+
+        Returns:
+            Dict with: is_recording, output_path, duration_seconds (if recording)
+        """
+        if not self._scrcpy:
+            return {"is_recording": False}
+
+        return self.scrcpy.get_recording_status()

@@ -97,6 +97,38 @@ async def list_tools() -> list[Tool]:
                 "properties": {},
                 "required": []
             }
+        ),
+        Tool(
+            name="device_start_recording",
+            description="Start recording screen to a video file. Uses scrcpy --record for efficient H.264 encoding on device. Recording runs in background until stopped.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "output_path": {
+                        "type": "string",
+                        "description": "Path to output video file (should end in .mp4)"
+                    }
+                },
+                "required": ["output_path"]
+            }
+        ),
+        Tool(
+            name="device_stop_recording",
+            description="Stop the current recording and finalize the video file. Returns recording info including duration and file size.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        ),
+        Tool(
+            name="device_recording_status",
+            description="Get the current recording status. Returns whether recording is active, output path, and duration.",
+            inputSchema={
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
         )
     ]
 
@@ -157,6 +189,33 @@ async def call_tool(name: str, arguments: dict[str, Any]) -> list[TextContent | 
 
         elif name == "device_backend_status":
             status = r.get_backend_status()
+            return [TextContent(
+                type="text",
+                text=json.dumps(status, indent=2)
+            )]
+
+        elif name == "device_start_recording":
+            output_path = arguments.get("output_path")
+            if not output_path:
+                return [TextContent(
+                    type="text",
+                    text="Error: output_path is required"
+                )]
+            result = await r.start_recording(output_path)
+            return [TextContent(
+                type="text",
+                text=json.dumps(result, indent=2)
+            )]
+
+        elif name == "device_stop_recording":
+            result = await r.stop_recording()
+            return [TextContent(
+                type="text",
+                text=json.dumps(result, indent=2)
+            )]
+
+        elif name == "device_recording_status":
+            status = r.get_recording_status()
             return [TextContent(
                 type="text",
                 text=json.dumps(status, indent=2)

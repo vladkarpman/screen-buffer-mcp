@@ -2,7 +2,7 @@
 
 import asyncio
 
-__version__ = "2.0.1"
+__version__ = "2.1.0"
 
 from .server import main as _async_main
 

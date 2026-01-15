@@ -13,9 +13,11 @@ Requirements:
 import asyncio
 import io
 import logging
+import subprocess
 import threading
 import time
 from collections import deque
+from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger("screen-buffer-mcp.scrcpy")
@@ -53,6 +55,10 @@ class ScrcpyBackend:
         self._lock = threading.Lock()
         self._frame_thread: threading.Thread | None = None
         self._running = False
+        # Recording state (uses separate scrcpy process with --record)
+        self._recording_process: subprocess.Popen | None = None
+        self._recording_output_path: str | None = None
+        self._recording_start_time: float | None = None
 
     @property
     def is_connected(self) -> bool:
@@ -66,13 +72,15 @@ class ScrcpyBackend:
                 if self._session.va is not None:
                     frame = self._session.va.get_frame()
                     if frame is not None:
+                        current_time = time.time()
                         with self._lock:
                             self._frame_buffer.append({
                                 'frame': frame,
-                                'timestamp': time.time()
+                                'timestamp': current_time
                             })
                             if self._height == 0:
                                 self._height, self._width = frame.shape[:2]
+
                 time.sleep(0.016)  # ~60 fps polling
             except Exception as e:
                 logger.debug(f"Frame polling error: {e}")
@@ -205,8 +213,163 @@ class ScrcpyBackend:
 
         raise RuntimeError("Screen size not available")
 
+    # --- Recording methods (uses separate scrcpy --record process) ---
+
+    @property
+    def is_recording(self) -> bool:
+        """Check if recording is active."""
+        return self._recording_process is not None and self._recording_process.poll() is None
+
+    async def start_recording(self, output_path: str) -> bool:
+        """Start recording to file using scrcpy --record.
+
+        Args:
+            output_path: Path to output video file (.mp4)
+
+        Returns:
+            True if recording started successfully
+        """
+        if self.is_recording:
+            logger.warning("Recording already in progress")
+            return False
+
+        if not self._device_id:
+            logger.warning("No device connected - cannot start recording")
+            return False
+
+        # Ensure output directory exists
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+
+        # Build scrcpy command with recording
+        cmd = [
+            "scrcpy",
+            "-s", self._device_id,  # Target device
+            "--record", str(output_file),  # Record to file
+            "--no-playback",  # Don't show window (record only)
+            "--video-bit-rate", "8M",  # Good quality
+            "--max-fps", "60",  # Match frame buffer fps
+        ]
+
+        try:
+            logger.info(f"Starting recording to {output_path}")
+            self._recording_process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+            )
+            self._recording_output_path = str(output_file)
+            self._recording_start_time = time.time()
+
+            # Give scrcpy a moment to start
+            await asyncio.sleep(0.5)
+
+            if self._recording_process.poll() is not None:
+                # Process exited immediately - check error
+                stderr = self._recording_process.stderr.read().decode() if self._recording_process.stderr else ""
+                logger.error(f"scrcpy recording failed to start: {stderr}")
+                self._recording_process = None
+                self._recording_output_path = None
+                self._recording_start_time = None
+                return False
+
+            logger.info(f"Recording started to {output_path}")
+            return True
+
+        except FileNotFoundError:
+            logger.error("scrcpy not found in PATH")
+            return False
+        except Exception as e:
+            logger.error(f"Failed to start recording: {e}")
+            return False
+
+    async def stop_recording(self) -> dict[str, Any]:
+        """Stop recording and return info about the recorded file.
+
+        Returns:
+            Dict with recording info: output_path, duration_seconds, success
+        """
+        if not self.is_recording:
+            return {
+                "success": False,
+                "error": "No recording in progress",
+            }
+
+        output_path = self._recording_output_path
+        start_time = self._recording_start_time
+
+        try:
+            # Send SIGINT for graceful shutdown (scrcpy finalizes the video)
+            self._recording_process.terminate()
+            # Wait for process to finish (max 5 seconds)
+            try:
+                self._recording_process.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self._recording_process.kill()
+                self._recording_process.wait()
+
+            duration = time.time() - start_time if start_time else 0
+
+            # Check if file was created
+            output_file = Path(output_path) if output_path else None
+            if output_file and output_file.exists():
+                file_size = output_file.stat().st_size
+                logger.info(f"Recording saved: {output_path} ({file_size} bytes, {duration:.1f}s)")
+                return {
+                    "success": True,
+                    "output_path": str(output_path),
+                    "duration_seconds": round(duration, 2),
+                    "file_size_bytes": file_size,
+                }
+            else:
+                logger.warning(f"Recording file not found: {output_path}")
+                return {
+                    "success": False,
+                    "error": f"Recording file not found: {output_path}",
+                }
+
+        except Exception as e:
+            logger.error(f"Error stopping recording: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+            }
+        finally:
+            self._recording_process = None
+            self._recording_output_path = None
+            self._recording_start_time = None
+
+    def get_recording_status(self) -> dict[str, Any]:
+        """Get current recording status.
+
+        Returns:
+            Dict with: is_recording, output_path, duration_seconds (if recording)
+        """
+        if not self.is_recording:
+            return {
+                "is_recording": False,
+            }
+
+        duration = time.time() - self._recording_start_time if self._recording_start_time else 0
+        return {
+            "is_recording": True,
+            "output_path": self._recording_output_path,
+            "duration_seconds": round(duration, 2),
+        }
+
     def disconnect(self) -> None:
         """Disconnect from device."""
+        # Stop recording if active
+        if self._recording_process is not None:
+            try:
+                self._recording_process.terminate()
+                self._recording_process.wait(timeout=2)
+            except Exception:
+                pass
+            self._recording_process = None
+            self._recording_output_path = None
+            self._recording_start_time = None
+
         self._running = False
         if self._frame_thread:
             self._frame_thread.join(timeout=1)
